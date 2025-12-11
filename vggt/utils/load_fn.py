@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import ipdb
 import torch
 from PIL import Image
 from torchvision import transforms as TF
@@ -135,10 +136,24 @@ def load_and_preprocess_images(image_path_list, mode="crop"):
     target_size = 518
 
     # First process all images and collect their shapes
+    Img_list = []
+    org_shapes = []
+
+    from collections import Counter
+
     for image_path in image_path_list:
         # Open image
         img = Image.open(image_path)
+        Img_list.append(img)
+        org_shapes.append(img.size)  # (width, height)
 
+    if len(set(org_shapes)) > 1:
+        width, height = Counter(org_shapes).most_common(1)[0][0]
+        for i in range(len(Img_list)):
+            if Img_list[i].size != (width, height):
+                Img_list[i] = Img_list[i].resize((width, height), Image.Resampling.BICUBIC)
+
+    for img in Img_list:
         # If there's an alpha channel, blend onto white background:
         if img.mode == "RGBA":
             # Create white background
@@ -196,6 +211,7 @@ def load_and_preprocess_images(image_path_list, mode="crop"):
     # Check if we have different shapes
     # In theory our model can also work well with different shapes
     if len(shapes) > 1:
+        raise
         print(f"Warning: Found images with different shapes: {shapes}")
         # Find maximum dimensions
         max_height = max(shape[0] for shape in shapes)
